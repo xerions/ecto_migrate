@@ -25,6 +25,7 @@ defmodule EctoMigrate.Mixfile do
   #
   # Type `mix help deps` for more examples and options
   defp deps do
-    []
-  end
+    [{:postgrex, ">= 0.0.0", optional: true},
+     {:mariaex, ">= 0.0.0", optional: true},
+     {:ecto, "~> 0.9"}]  end
 end
