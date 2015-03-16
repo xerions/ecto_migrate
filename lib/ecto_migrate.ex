@@ -1,0 +1,2 @@
+defmodule EctoMigrate do
+end
