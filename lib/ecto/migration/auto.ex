@@ -101,7 +101,7 @@ defmodule Ecto.Migration.Auto do
   end
 
   defp gen_up_dsl(module, table_name, all_changes, []) do
-    key? = module.__schema__(:primary_key) == :id
+    key? = module.__schema__(:primary_key) == [:id]
     quote do
       create table(unquote(table_name), primary_key: unquote(key?)) do
         unquote(all_changes)
