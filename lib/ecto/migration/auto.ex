@@ -100,12 +100,26 @@ defmodule Ecto.Migration.Auto do
     |> Enum.map(fn({name, _}) -> quote do: remove(unquote(name)) end)
   end
 
+  defp get_index(module) do
+    case :erlang.function_exported(module, :build_index, 0) do
+      true ->
+        {tablename, columns, opts} = module.build_index()
+        quote do
+          create index(unquote(tablename), unquote(columns), unquote(opts))
+        end
+      false ->
+        ""
+    end
+  end
+
   defp gen_up_dsl(module, table_name, all_changes, []) do
     key? = module.__schema__(:primary_key) == [:id]
+    index = get_index(module)
     quote do
       create table(unquote(table_name), primary_key: unquote(key?)) do
         unquote(all_changes)
       end
+      unquote(index)
     end
   end
 
