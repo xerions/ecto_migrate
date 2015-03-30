@@ -2,13 +2,14 @@ defmodule Ecto.Migration.Auto do
   alias Ecto.Migration.SystemTable
 
   def migrate(repo, module) do
-    existings_fields = get_existings_fields(repo, module) |> transform_existing_keys()
-    if execute(module, existings_fields, repo) do
+    all_system_fields = get_existings_fields(repo, module)
+    existings_fields =  all_system_fields[:metainfo] |> transform_existing_keys()
+    if execute(module, existings_fields, all_system_fields, repo) do
       Ecto.Migrator.up(repo, random, extend_module_name(module, ".Migration"))
     end
   end
 
-  defp execute(module, fields_in_db, repo) do
+  defp execute(module, fields_in_db, all_system_fields, repo) do
     assocs = get_associations(module)
     all_fields = module.__schema__(:fields)
     add_fields = add_fields(module, all_fields, fields_in_db, assocs)
@@ -41,7 +42,7 @@ defmodule Ecto.Migration.Auto do
   defp get_existings_fields(repo, module) do
     table_name = module.__schema__(:source)
     try do
-      repo.get(SystemTable, table_name)[:metainfo]
+      repo.get(SystemTable, table_name)
     catch
       x, y ->
         IO.inspect({x, y})

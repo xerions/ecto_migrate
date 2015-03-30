@@ -2,7 +2,7 @@ import Exd.Index
 
 defmodule TestModel do
   use Ecto.Schema
-  index(:ecto_migrate_test_table, [:i])
+  index(:ecto_migrate_test_table, [:i], name: "alex")
   schema "ecto_migrate_test_table" do
     field :f, :string, index: []
     field :i, :integer
