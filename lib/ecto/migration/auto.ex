@@ -15,7 +15,7 @@ defmodule Ecto.Migration.Auto do
     add_fields = add_fields(module, all_fields, fields_in_db, assocs)
     remove_fields = remove_fields(all_fields, fields_in_db)
     all_changes = remove_fields ++ add_fields
-    update_metainfo(module, all_fields, assocs, repo)
+    update_meta_and_index_info(module, all_fields, assocs, repo)
     do_execute(module, table_name, all_changes, fields_in_db, repo)
   end
 
@@ -100,6 +100,7 @@ defmodule Ecto.Migration.Auto do
     |> Enum.map(fn({name, _}) -> quote do: remove(unquote(name)) end)
   end
 
+  # TODO move it to the index
   defp get_index(module) do
     case :erlang.function_exported(module, :build_index, 0) do
       true ->
@@ -131,14 +132,33 @@ defmodule Ecto.Migration.Auto do
     end
   end
 
-  defp update_metainfo(module, all_fields, assocs, repo) do
+  # TODO move it to the index.ex
+  defp get_index_info(module) do
+    case module.build_index do
+      "" ->
+        {"", "", false, false, ""}
+      {_tbl, fields, opts} ->
+        index_name = List.keyfind(opts, :name, 1, "")
+        concurently = List.keyfind(opts, :concurrently, 1, false)
+        unique = List.keyfind(opts, :unique, 1, false)
+        index_type = List.keyfind(opts, :using, 1, "")
+        {Enum.join(fields, ","), index_name, concurently, unique, index_type}
+    end
+  end
+
+  defp update_meta_and_index_info(module, all_fields, assocs, repo) do
     table_name = module.__schema__(:source)
     metainfo = system_table_meta(module, all_fields, assocs)
+    {index, index_name, concurently, unique, index_type} = get_index_info(module)
     case repo.get(SystemTable, table_name) do
       nil ->
-        repo.insert(%SystemTable{tablename: table_name, metainfo: metainfo})
+        repo.insert(%SystemTable{tablename: table_name, metainfo: metainfo,
+                                 index: index, index_name: index_name, concurently: concurently,
+                                 unique: unique, index_type: index_type})
       table ->
-        repo.update(%SystemTable{table | metainfo: metainfo})
+        repo.update(%SystemTable{table | metainfo: metainfo, index: index,
+                                 index_name: index_name, concurently: concurently,
+                                 unique: unique, index_type: index_type})
     end
   end
 
