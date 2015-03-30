@@ -9,18 +9,18 @@ defmodule Ecto.Migration.Auto do
   end
 
   defp execute(module, fields_in_db, repo) do
-    table_name = table_name(module)
     assocs = get_associations(module)
     all_fields = module.__schema__(:fields)
     add_fields = add_fields(module, all_fields, fields_in_db, assocs)
     remove_fields = remove_fields(all_fields, fields_in_db)
     all_changes = remove_fields ++ add_fields
     update_meta_and_index_info(module, all_fields, assocs, repo)
-    do_execute(module, table_name, all_changes, fields_in_db, repo)
+    do_execute(module, all_changes, fields_in_db, repo)
   end
 
-  defp do_execute(_module, _table_name, [], _fields_in_db, _repo), do: nil
-  defp do_execute(module, table_name, all_changes, fields_in_db, repo) do
+  defp do_execute(_module, [], _fields_in_db, _repo), do: nil
+  defp do_execute(module, all_changes, fields_in_db, repo) do
+    table_name = table_name(module)
     module_name = extend_module_name(module, ".Migration")
     updsl = gen_up_dsl(module, table_name, all_changes, fields_in_db)
     res = quote do
