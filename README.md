@@ -83,3 +83,23 @@ Ecto.Migration.Auto.migrate(Repo, Post)
 Ecto.Migration.Auto.migrate(Repo, Comment)
 
 ```
+
+`ecto_migrate` also supports indexes
+
+```elixir
+
+import Ecto.Migration.Index
+
+defmodule Weather do # is for later at now
+  use Ecto.Model
+
+  index(:weather, [:city], concurently: true)
+  schema "weather" do
+    field :city
+    field :temp_lo, :integer
+    field :temp_hi, :integer
+    field :prcp,    :float, default: 0.0
+  end
+end
+
+```
