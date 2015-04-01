@@ -2,28 +2,29 @@ defmodule Ecto.Migration.Auto do
   alias Ecto.Migration.SystemTable
 
   def migrate(repo, module) do
-    all_system_fields = get_existings_fields(repo, module)
-    existings_fields =  all_system_fields[:metainfo] |> transform_existing_keys()
-    if execute(module, existings_fields, all_system_fields, repo) do
+    if execute(module, get_existings_fields(repo, module), repo) do
       Ecto.Migrator.up(repo, random, extend_module_name(module, ".Migration"))
     end
   end
 
-  defp execute(module, fields_in_db, all_system_fields, repo) do
+  defp execute(module, all_system_fields, repo) do
+    metainfo =  all_system_fields[:metainfo] |> transform_existing_keys()
     assocs = get_associations(module)
     all_fields = module.__schema__(:fields)
-    add_fields = add_fields(module, all_fields, fields_in_db, assocs)
-    remove_fields = remove_fields(all_fields, fields_in_db)
+    add_fields = add_fields(module, all_fields, metainfo, assocs)
+    remove_fields = remove_fields(all_fields, metainfo)
+    update_index = Ecto.Migration.Index.is_index_updated(module, all_system_fields)
     all_changes = remove_fields ++ add_fields
     update_meta_and_index_info(module, all_fields, assocs, repo)
-    do_execute(module, all_changes, fields_in_db, repo)
+    do_execute(module, all_changes, metainfo, update_index, repo)
   end
 
-  defp do_execute(_module, [], _fields_in_db, _repo), do: nil
-  defp do_execute(module, all_changes, fields_in_db, repo) do
+  defp do_execute(_module, [], _fields_in_db, false, _repo), do: nil
+
+  defp do_execute(module, all_changes, fields_in_db, update_index, repo) do
     table_name = table_name(module)
     module_name = extend_module_name(module, ".Migration")
-    updsl = gen_up_dsl(module, table_name, all_changes, fields_in_db)
+    updsl = gen_up_dsl(repo, module, table_name, all_changes, fields_in_db, update_index)
     res = quote do
       defmodule unquote(module_name) do
         use Ecto.Migration
@@ -39,7 +40,7 @@ defmodule Ecto.Migration.Auto do
     res |> Code.eval_quoted
   end
 
-  defp get_existings_fields(repo, module) do
+  def get_existings_fields(repo, module) do
     table_name = module.__schema__(:source)
     try do
       repo.get(SystemTable, table_name)
@@ -101,65 +102,53 @@ defmodule Ecto.Migration.Auto do
     |> Enum.map(fn({name, _}) -> quote do: remove(unquote(name)) end)
   end
 
-  # TODO move it to the index
-  defp get_index(module) do
-    case :erlang.function_exported(module, :build_index, 0) do
-      true ->
-        {tablename, columns, opts} = module.build_index()
-        quote do
-          create index(unquote(tablename), unquote(columns), unquote(opts))
-        end
-      false ->
-        ""
+  # updated only index
+  defp gen_up_dsl(repo, module, table_name, [], _, true) do
+    new_index = Ecto.Migration.Index.create_index(module, true)
+    old_index = Ecto.Migration.Index.delete_old_index_from_db(true, table_name, module, repo)
+    Ecto.Migration.Index.update_index_in_system_table(repo, module, table_name)
+    quote do
+      unquote(old_index)
+      unquote(new_index)
     end
   end
 
-  defp gen_up_dsl(module, table_name, all_changes, []) do
+  # new table
+  defp gen_up_dsl(_repo, module, table_name, all_changes, [], update_index) do
     key? = module.__schema__(:primary_key) == [:id]
-    index = get_index(module)
+    create_index = Ecto.Migration.Index.create_index(module, update_index)
     quote do
       create table(unquote(table_name), primary_key: unquote(key?)) do
         unquote(all_changes)
       end
-      unquote(index)
+      unquote(create_index)
     end
   end
 
-  defp gen_up_dsl(module, table_name, all_changes, _) do
+  # updated or table or index or both
+  defp gen_up_dsl(repo, module, table_name, all_changes, _, update_index) do
+    index_deletion = Ecto.Migration.Index.delete_old_index_from_db(update_index, table_name, module, repo)
+    index_creation = Ecto.Migration.Index.create_index(module, update_index)
     quote do
       alter table(unquote(table_name)) do
         unquote(all_changes)
       end
-    end
-  end
-
-  # TODO move it to the index.ex
-  defp get_index_info(module) do
-    case module.build_index do
-      "" ->
-        {"", "", false, false, ""}
-      {_tbl, fields, opts} ->
-        index_name = List.keyfind(opts, :name, 1, "")
-        concurently = List.keyfind(opts, :concurrently, 1, false)
-        unique = List.keyfind(opts, :unique, 1, false)
-        index_type = List.keyfind(opts, :using, 1, "")
-        {Enum.join(fields, ","), index_name, concurently, unique, index_type}
+      unquote(index_deletion)
+      unquote(index_creation)
     end
   end
 
   defp update_meta_and_index_info(module, all_fields, assocs, repo) do
     table_name = module.__schema__(:source)
     metainfo = system_table_meta(module, all_fields, assocs)
-    {index, index_name, concurently, unique, index_type} = get_index_info(module)
+    {index, index_name, concurently, unique, index_type} = Ecto.Migration.Index.get_index_fields(module)
     case repo.get(SystemTable, table_name) do
       nil ->
         repo.insert(%SystemTable{tablename: table_name, metainfo: metainfo,
                                  index: index, index_name: index_name, concurently: concurently,
                                  unique: unique, index_type: index_type})
       table ->
-        repo.update(%SystemTable{table | metainfo: metainfo, index: index,
-                                 index_name: index_name, concurently: concurently,
-                                 unique: unique, index_type: index_type})
+        repo.update(%SystemTable{table | metainfo: metainfo})
     end
   end
 

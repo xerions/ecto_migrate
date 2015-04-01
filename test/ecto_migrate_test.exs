@@ -1,11 +1,12 @@
-import Exd.Index
+import Ecto.Migration.Index
 
 defmodule TestModel do
   use Ecto.Schema
-  index(:ecto_migrate_test_table, [:i], name: "alex")
+  index(:ecto_migrate_test_table, [:l], using: "hash")
   schema "ecto_migrate_test_table" do
-    field :f, :string, index: []
+    field :f, :string
     field :i, :integer
+    field :l, :boolean
   end
 end
 
@@ -17,7 +18,7 @@ defmodule EctoMigrateTest do
     Ecto.Migration.Auto.migrate(EctoIt.Repo, TestModel)
     query = from t in Ecto.Migration.SystemTable, select: t
     [result] = EctoIt.Repo.all(query)
-    assert result.metainfo == "f:string,i:integer"
+    assert result.metainfo == "f:string,i:integer,l:boolean"
     assert result.tablename == "ecto_migrate_test_table"
     :ok = :application.stop(:ecto_it)
   end
