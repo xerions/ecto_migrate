@@ -85,7 +85,7 @@ defmodule Ecto.Migration.Auto do
     for name <- all_fields, name != :id do
       case List.keyfind(assocs, name, 0) do
         nil ->
-          type = module.__schema__(:field, name)
+          type = Migratable.type(module.__schema__(:field, name))
           opts = get_attribute_opts(module, name)
           add_field(name, fields_in_db, type, quote do: [unquote(type), unquote(opts)])
         {_assoc_field_name, association_table, _mod} ->
@@ -101,7 +101,7 @@ defmodule Ecto.Migration.Auto do
   end
 
   defp gen_up_dsl(module, table_name, all_changes, []) do
-    key? = module.__schema__(:primary_key) == [:id]
+    key? = module.__schema__(:primary_key) == :id
     quote do
       create table(unquote(table_name), primary_key: unquote(key?)) do
         unquote(all_changes)
