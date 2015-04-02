@@ -62,7 +62,7 @@ defmodule Ecto.Migration.Auto do
   end
 
   defp get_attribute_opts(module, name) do
-    case :erlang.function_exported(module, :__atrribute_option__, 1) do
+    case :erlang.function_exported(module, :__attribute_option__, 1) do
       true -> module.__attribute_option__(name)
       _    -> []
     end
