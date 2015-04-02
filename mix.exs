@@ -27,5 +27,7 @@ defmodule EctoMigrate.Mixfile do
   defp deps do
     [{:postgrex, ">= 0.0.0", optional: true},
      {:mariaex, ">= 0.0.0", optional: true},
-     {:ecto, "~> 0.9"}]  end
+     {:ecto, "~> 0.10.1"},
+     {:ecto_it, git: "https://github.com/xerions/ecto_it"}]
+  end
 end
