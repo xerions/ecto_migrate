@@ -85,7 +85,7 @@ defmodule Ecto.Migration.Auto do
     for name <- all_fields, name != :id do
       case List.keyfind(assocs, name, 0) do
         nil ->
-          type = module.__schema__(:field, name)
+          type = Migratable.type(module.__schema__(:field, name))
           opts = get_attribute_opts(module, name)
           add_field(name, fields_in_db, type, quote do: [unquote(type), unquote(opts)])
         {_assoc_field_name, association_table, _mod} ->
