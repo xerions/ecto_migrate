@@ -84,7 +84,34 @@ Ecto.Migration.Auto.migrate(Repo, Comment)
 
 ```
 
-`ecto_migrate` also supports indexes
+`ecto_migrate` also provides additional `migrate/3` API. For example use it with [ecto_taggable](https://github.com/xerions/ecto_taggable). For example we have model:
+
+```elixir
+defmodule Weather do # is for later at now
+  use Ecto.Model
+
+  schema "weather" do
+    field :city
+    field :temp_lo, :integer
+    field :temp_hi, :integer
+    field :prcp,    :float, default: 0.0
+    has_many :weather_tags, {"weather_tags", Ecto.Taggable}, [foreign_key: :tag_id] # foreign_key `tag_id` is mandatory.
+  end
+end
+```
+
+Now we can migrate `weather_tag` table with:
+
+```elixir
+Ecto.Migration.Auto.migrate(Repo, Ecto.Taggable, [for: Weather])
+```
+
+It will generate and migrate `weather_tags` table to the database which will be associated with `weather` table.
+
+Indexes
+--------------------
+
+`ecto_migrate` has support of indexes:
 
 ```elixir
 defmodule Weather do # is for later at now
