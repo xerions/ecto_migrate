@@ -3,36 +3,52 @@ defmodule Ecto.Migration.Auto do
   alias Ecto.Migration.Index
   alias Ecto.Migration.SystemTable
 
-  def migrate(repo, module) do
-    table_name = module.__schema__(:source)
+  def migrate(repo, module, opts \\ []) do
+    tablename = case opts do
+                  [] ->
+                    module.__schema__(:source)
+                  [for: mod] ->
+                    [{_, tablename}] = get_associations(mod)
+                    tablename
+                end
     # already stored fields of the model in the system table
-    all_system_fields = get_existings_fields(repo, table_name)
+    all_system_fields = get_existings_fields(repo, tablename)
     # already stored indexes of the model in the system table
-    all_system_indexes = get_existings_indexes(repo, table_name)
-    if execute(module, all_system_fields, all_system_indexes, repo) do
-      Ecto.Migrator.up(repo, random, extend_module_name(module, ".Migration"))
-    end
+    all_system_indexes = get_existings_indexes(repo, tablename)
+    # execute migration
+    if execute(tablename |> to_string, module, all_system_fields, all_system_indexes, repo, opts) do
+      Ecto.Migrator.up(repo, random, extend_module_name(migration_module_name(module, opts), ".Migration"))
+    end   
   end
 
-  defp execute(module, all_system_fields, all_system_indexes, repo) do
-    metainfo =  all_system_fields[:metainfo] |> transform_existing_keys()
+  # a tag table has the same structure every time.
+  # so we no need to execute migration, every time for it
+  defp execute(_tablename, _module, all_system_fields, _, _, opts)
+    when all_system_fields != nil and length(opts) > 0, do: nil
+
+  defp execute(tablename, module, all_system_fields, all_system_indexes, repo, opts) do
     assocs = get_associations(module)
+    metainfo = all_system_fields[:metainfo] |> transform_existing_keys()
     all_fields = module.__schema__(:fields)
-    add_fields = add_fields(module, all_fields, metainfo, assocs)
+    add_fields = [get_tag_field(tablename, opts) | add_fields(module, all_fields, metainfo, assocs)] |> :lists.flatten
     remove_fields = remove_fields(all_fields, metainfo)
     all_indexes = Index.get_all(module)
     update_index = Index.updated?(all_indexes, all_system_indexes)
     all_changes = remove_fields ++ add_fields
-    update_metainfo(module, all_fields, assocs, repo)
-    do_execute(module, all_changes, metainfo, update_index, all_indexes, all_system_indexes, repo)
+    update_metainfo(module, tablename, all_fields, assocs, repo)
+    update_index_info(module, repo)
+    index_info = {update_index, all_indexes, all_system_indexes}
+    do_execute(repo, tablename, migration_module_name(module, opts), all_changes, metainfo, index_info, opts)
   end
 
-  defp do_execute(_module, [], _fields_in_db, false, _, _, _repo), do: nil
-
-  defp do_execute(module, all_changes, fields_in_db, update_index, all_indexes, all_system_indexes, repo) do
-    table_name = table_name(module)
+  defp do_execute(_repo, _, _module, [], _fields_in_db, {false, _, _}, _), do: nil
+  defp do_execute(repo, tablename, module, all_changes, fields_in_db, index_info, opts) do
+    {update_index, all_indexes, all_system_indexes} = index_info
     module_name = extend_module_name(module, ".Migration")
-    updsl = gen_up_dsl(repo, module, table_name, all_changes, fields_in_db, all_indexes, all_system_indexes, update_index)
+    updsl = case opts do
+             [] -> gen_up_dsl(repo, module, tablename |> String.to_atom, all_changes, fields_in_db, all_indexes, all_system_indexes, update_index)
+             _ ->  gen_up_dsl(tablename |> String.to_atom, all_changes)
+            end
     res = quote do
       defmodule unquote(module_name) do
         use Ecto.Migration
@@ -40,7 +56,7 @@ defmodule Ecto.Migration.Auto do
           unquote(updsl)
         end
         def down do
-          drop table(unquote table_name)
+          drop table(unquote tablename)
         end
       end
     end
@@ -48,12 +64,21 @@ defmodule Ecto.Migration.Auto do
     res |> Code.eval_quoted
   end
 
+  # generate tag table
+  defp gen_up_dsl(tablename, all_changes) do
+    quote do
+      create table(unquote(tablename)) do
+        unquote(all_changes)
+      end
+    end
+  end
+
   # create new table
-  defp gen_up_dsl(_repo, module, table_name, all_changes, [], all_indexes, _, update_index) do
+  defp gen_up_dsl(_repo, module, tablename, all_changes, [], all_indexes, _, update_index) do
     key? = module.__schema__(:primary_key) == [:id]
     index_creation = Index.create(module, all_indexes, update_index)
     quote do
-      create table(unquote(table_name), primary_key: unquote(key?)) do
+      create table(unquote(tablename), primary_key: unquote(key?)) do
         unquote(all_changes)
       end
       unquote(index_creation)
@@ -61,10 +86,10 @@ defmodule Ecto.Migration.Auto do
   end
 
   # updated or table or index or both
-  defp gen_up_dsl(repo, module, table_name, all_changes, _, all_indexes, all_system_indexes, update_index) do
-    index_deletion = Index.delete(update_index, table_name |> Atom.to_string, module, repo, all_system_indexes)
+  defp gen_up_dsl(repo, module, tablename, all_changes, _, all_indexes, all_system_indexes, update_index) do
+    index_deletion = Index.delete(update_index, tablename |> Atom.to_string, module, repo, all_system_indexes)
     index_creation = Index.create(module, all_indexes, update_index)
-    alter = alter_table(all_changes, table_name)
+    alter = alter_table(all_changes, tablename)
     quote do
       unquote(alter)
       unquote(index_deletion)
@@ -81,25 +106,27 @@ defmodule Ecto.Migration.Auto do
     end
   end
 
-  defp update_metainfo(module, all_fields, assocs, repo) do
-    table_name = module.__schema__(:source)
+  defp update_metainfo(module, tablename, all_fields, assocs, repo) do
     metainfo = system_table_meta(module, all_fields, assocs)
-    case repo.get(SystemTable, table_name) do
+    case repo.get(SystemTable, tablename) do
       nil ->
-        repo.insert(%SystemTable{tablename: table_name, metainfo: metainfo})
-    table ->
+        repo.insert(%SystemTable{tablename: tablename, metainfo: metainfo})
+      table ->
         repo.update(%SystemTable{table | metainfo: metainfo})
     end
+  end
 
-    query = from s in SystemTable.Index, where: s.tablename == ^table_name, select: s
+  defp update_index_info(module, repo) do
+    tablename = module.__schema__(:source)
+    query = from s in SystemTable.Index, where: s.tablename == ^tablename, select: s
     # insert index info if need
     case repo.all(query) do
       [] ->
-        # we have no anything with 'table_name' record in the SystemTable.Index
+        # we have no anything with 'tablename' record in the SystemTable.Index
         # table, let's insert records about it
         all_indexes = Index.get_all(module)
         for {fields, opts} <- all_indexes do
-          repo.insert(Map.merge(%SystemTable.Index{tablename: table_name, index: Enum.join(fields, ",")}, :maps.from_list(opts)))
+          repo.insert(Map.merge(%SystemTable.Index{tablename: tablename, index: Enum.join(fields, ",")}, :maps.from_list(opts)))
         end
       _ ->
         # we can't update index information here, because table is not empty and
@@ -108,9 +135,9 @@ defmodule Ecto.Migration.Auto do
     end
   end
 
-  def get_existings_indexes(repo, table_name) do
+  def get_existings_indexes(repo, tablename) do
     try do
-      repo.all(from s in SystemTable.Index, where: ^table_name == s.tablename)
+      repo.all(from s in SystemTable.Index, where: ^tablename == s.tablename)
     catch
       _x, _y ->
         Ecto.Migrator.up(repo, random, SystemTable.Index.Migration) # we have no system table - 'ecto_migration_auto_index', let's create it
@@ -118,9 +145,9 @@ defmodule Ecto.Migration.Auto do
     end
   end
 
-  def get_existings_fields(repo, table_name) do
+  def get_existings_fields(repo, tablename) do
     try do
-      repo.get(SystemTable, table_name)
+      repo.get(SystemTable, tablename)
     catch
       _x, _y ->
         Ecto.Migrator.up(repo, random, SystemTable.Migration) # we have no system table - 'ecto_migration_auto', let's create it
@@ -132,7 +159,9 @@ defmodule Ecto.Migration.Auto do
     module.__schema__(:associations) |> Enum.flat_map(fn(association) ->
       case module.__schema__(:association, association) do
         %Ecto.Association.BelongsTo{owner_key: field, assoc: assoc_module} ->
-          [{field, table_name(assoc_module), assoc_module}]
+          [{field, assoc_module.__schema__(:source) |> String.to_atom, assoc_module}]
+        %Ecto.Association.Has{assoc: assoc, queryable: {tablename, _}} ->
+          [{assoc, tablename}]
         _ ->
           []
       end
@@ -207,7 +236,9 @@ defmodule Ecto.Migration.Auto do
     ((module |> to_string) <> str) |> String.to_atom
   end
 
-  defp table_name(module) do
-    module.__schema__(:source) |> String.to_atom
-  end
+  defp get_tag_field(_, []), do: []
+  defp get_tag_field(tablename, _opts), do: quote do: (add :tags, references(unquote(tablename) |> String.to_atom))
+
+  defp migration_module_name(module, []), do: module
+  defp migration_module_name(module, [for: mod]), do: ((module |> Atom.to_string) <> "." <> (mod |> Atom.to_string)) |> String.to_atom
 end
