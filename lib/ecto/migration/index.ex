@@ -22,9 +22,8 @@ defmodule Ecto.Migration.Index do
     end
   end
 
-  def create(module, all_indexes, true) when length(all_indexes) > 0 do
+  def create(tablename, all_indexes, true) when length(all_indexes) > 0 do
     for {fields, opts} <- all_indexes do
-      tablename =  module.__schema__(:source) |> String.to_atom
       quote do
         create index(unquote(tablename), unquote(fields), unquote(opts))
       end
