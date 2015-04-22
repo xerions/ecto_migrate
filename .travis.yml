@@ -1,0 +1,19 @@
+language: elixir
+elixir:
+  - 1.0.0
+  - 1.0.1
+  - 1.0.2
+  - 1.0.3
+otp_release:
+  - 17.4
+services: mysql
+before_script:
+  - export PATH=`pwd`/elixir/bin:$PATH
+  - mix local.hex --force
+  - mix deps.get
+script:
+  - MIX_ENV=mysql mix test
+  - MIX_ENV=pg mix test
+notifications:
+  recipients:
+    - elixmoon@gmail.com

@@ -1,18 +1,17 @@
 EctoMigrate
 ===========
 
+To test, use EctoIt (is depended on it for tests purposes):
+
+```
+MIX_ENV=test iex -S mix
+```
+
+After, it should be possible:
+
 ```elixir
-
-# Configuration for Repo, only for iex try taste, please use supervisor in your application
-:application.set_env(:example, Repo, [adapter: Ecto.Adapters.MySQL, database: "example", username: "root"])
-defmodule Repo, do: (use Ecto.Repo, otp_app: :example)
-Repo.start_link
-
-# The same example for postgres
-:application.set_env(:example, Repo, [adapter: Ecto.Adapters.Postgres, database: "example", username: "postgres"])
-defmodule Repo, do: (use Ecto.Repo, otp_app: :example)
-Repo.start_link
-
+:application.start(:ecto_it)
+alias EctoIt.Repo
 
 import Ecto.Query
 
@@ -107,16 +106,18 @@ Ecto.Migration.Auto.migrate(Repo, Ecto.Taggable, [for: Weather])
 ```
 
 It will generate and migrate `weather_tags` table to the database which will be associated with `weather` table.
+Please note, that 'migrate' is every explicit, every table for every module should be migrated explicit, may be there
+will be helper in the future.
 
 Indexes
---------------------
+-------
 
 `ecto_migrate` has support of indexes:
 
 ```elixir
 defmodule Weather do # is for later at now
   use Ecto.Model
-  use Ecto.Migration.Index
+  use Ecto.Migration.Auto.Index
 
   index(:city, unique: true)
   index(:prcp)
@@ -126,5 +127,25 @@ defmodule Weather do # is for later at now
     field :temp_hi, :integer
     field :prcp,    :float, default: 0.0
   end
+end
+```
+
+Extra attribute options
+-----------------------
+
+```elixir
+defmodule Weather do # is for later at now
+  use Ecto.Model
+  use Ecto.Migration.Auto.Index
+
+  schema "weather" do
+    field :city
+    field :temp_lo, :integer
+    field :temp_hi, :integer
+    field :prcp,    :float, default: 0.0
+  end
+
+  def __attribute_option__(:city), do: [size: 40]
+  def __attribute_option__(_),     do: []
 end
 ```

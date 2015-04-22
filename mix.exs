@@ -1,11 +1,34 @@
 defmodule EctoMigrate.Mixfile do
   use Mix.Project
+  @version "0.1.0"
+  @github "https://github.com/xerions/ecto_migrate"
 
   def project do
     [app: :ecto_migrate,
-     version: "0.0.1",
+     version: @version,
+
      elixir: "~> 1.1-dev",
+     description: description,
+     package: package,
+
+     # Docs
+     name: "Ecto Auto Migrate",
+     docs: [source_ref: "v#{@version}",
+            source_url: @github],
      deps: deps]
+  end
+
+  defp description do
+    """
+    Ecto auto migration library. It allows to generate and run migrations for initial
+    and update migrations.
+    """
+  end
+
+  defp package do
+    [contributors: ["Dmitry Russ(Aleksandrov)"],
+     licenses: ["Apache 2.0"],
+     links: %{"GitHub" => @github}]
   end
 
   # Configuration for the OTP application
@@ -28,6 +51,6 @@ defmodule EctoMigrate.Mixfile do
     [{:postgrex, ">= 0.0.0", optional: true},
      {:mariaex, ">= 0.0.0", optional: true},
      {:ecto, "~> 0.10.1"},
-     {:ecto_it, git: "https://github.com/xerions/ecto_it"}]
+     {:ecto_it, "~> 0.1.0", optional: true}]
   end
 end
