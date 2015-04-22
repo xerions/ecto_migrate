@@ -1,10 +1,10 @@
-EctoMigrate
-===========
+Ecto Migrate [![Build Status](https://travis-ci.org/xerions/ecto_migrate.svg)](https://travis-ci.org/xerions/ecto_migrate)
+============
 
 To test, use EctoIt (is depended on it for tests purposes):
 
 ```
-MIX_ENV=test iex -S mix
+iex -S mix
 ```
 
 After, it should be possible:
@@ -83,31 +83,34 @@ Ecto.Migration.Auto.migrate(Repo, Comment)
 
 ```
 
-`ecto_migrate` also provides additional `migrate/3` API. For example use it with [ecto_taggable](https://github.com/xerions/ecto_taggable). For example we have model:
+`ecto_migrate` also provides additional `migrate/3` API. For using with custom source defined models. Example:
 
 ```elixir
-defmodule Weather do # is for later at now
+defmodule Taggable do
   use Ecto.Model
 
-  schema "weather" do
-    field :city
-    field :temp_lo, :integer
-    field :temp_hi, :integer
-    field :prcp,    :float, default: 0.0
-    has_many :weather_tags, {"weather_tags", Ecto.Taggable}, [foreign_key: :tag_id] # foreign_key `tag_id` is mandatory.
+  schema "this is not a valid schema name and it will never be used" do
+    field :tag_id, :integer
+  end
+end
+
+defmodule MyModel do
+  use Ecto.Model
+  schema "my_model" do
+    field :a, :string
+    has_many :my_model_tags, {"my_model_tags", Taggable}, [foreign_key: :tag_id]
   end
 end
 ```
 
-Now we can migrate `weather_tag` table with:
+Now we can migrate `my_model_tags` table with:
 
 ```elixir
-Ecto.Migration.Auto.migrate(Repo, Ecto.Taggable, [for: Weather])
+Ecto.Migration.Auto.migrate(Repo, MyModel)
+Ecto.Migration.Auto.migrate(Repo, Taggable, [for: MyModel])
 ```
 
-It will generate and migrate `weather_tags` table to the database which will be associated with `weather` table.
-Please note, that 'migrate' is every explicit, every table for every module should be migrated explicit, may be there
-will be helper in the future.
+It will generate and migrate `my_model_tags` table to the database which will be associated with `my_model` table.
 
 Indexes
 -------
@@ -126,6 +129,26 @@ defmodule Weather do # is for later at now
     field :temp_lo, :integer
     field :temp_hi, :integer
     field :prcp,    :float, default: 0.0
+  end
+end
+```
+
+If you do not want to use DSL for defining indexes, macro index doing no more, as generate function:
+
+```elixir
+defmodule Weather do # is for later at now
+  use Ecto.Model
+
+  schema "weather" do
+    field :city
+    field :temp_lo, :integer
+    field :temp_hi, :integer
+    field :prcp,    :float, default: 0.0
+  end
+
+  def __indexes__ do
+    [{[:city], [unique: true]},
+     {[:prpc], []}]
   end
 end
 ```
