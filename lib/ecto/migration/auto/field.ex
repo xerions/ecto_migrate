@@ -68,7 +68,7 @@ defmodule Ecto.Migration.Auto.Field do
             association_table = assoc_mod.__schema__(:source) |> String.to_atom
             add(name, association_table, fields_in_db, quote do: [Ecto.Migration.references(unquote(association_table))])
           end
-        {assoc_field_name, mod, association_table} ->
+        {assoc_field_name, _mod, association_table} ->
           opts = get_attribute_opts(module, assoc_field_name)
           add(name, association_table, fields_in_db, quote do: [Ecto.Migration.references(unquote(association_table)), unquote(opts)])
       end
