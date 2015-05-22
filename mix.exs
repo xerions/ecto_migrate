@@ -7,7 +7,7 @@ defmodule EctoMigrate.Mixfile do
     [app: :ecto_migrate,
      version: @version,
 
-     elixir: "~> 1.1-dev",
+     elixir: "~>1.0.0 or ~> 1.1-dev",
      description: description,
      package: package,
 
