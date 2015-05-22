@@ -1,4 +1,4 @@
-## v0.2.0-dev
+## v0.2.0
 
 * Backwards incompatible changes
   * types will be saved in native form, that changes from Ecto types doesn't try run migration
