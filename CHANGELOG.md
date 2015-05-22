@@ -1,3 +1,8 @@
+## v0.2.0-dev
+
+* Backwards incompatible changes
+  * types will be saved in native form, that changes from Ecto types doesn't try run migration
+
 ## v0.1.1
 
 * Enhancements
