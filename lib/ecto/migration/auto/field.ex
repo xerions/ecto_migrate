@@ -95,9 +95,10 @@ defmodule Ecto.Migration.Auto.Field do
   end
 
   def type(data) do
-    case :erlang.function_exported(data, :type, 0) do
-      true  -> data.type
-      false -> data
+    try do
+      data.type()
+    rescue
+      UndefinedFunctionError -> data
     end
   end
 

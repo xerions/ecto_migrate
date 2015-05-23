@@ -1,6 +1,6 @@
 defmodule EctoMigrate.Mixfile do
   use Mix.Project
-  @version "0.2.0"
+  @version "0.2.1"
   @github "https://github.com/xerions/ecto_migrate"
 
   def project do

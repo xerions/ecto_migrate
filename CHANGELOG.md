@@ -1,3 +1,8 @@
+## v0.2.1
+
+* Enhancements
+  * Use try rescue for custom types, for the cases, where module may not be loaded(as in development)
+
 ## v0.2.0
 
 * Backwards incompatible changes
