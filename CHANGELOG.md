@@ -1,3 +1,8 @@
+## v0.3.0
+
+* Backwards incompatible changes
+  * use BIGINT type for primitive type integer
+
 ## v0.2.1
 
 * Enhancements

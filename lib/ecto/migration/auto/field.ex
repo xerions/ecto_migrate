@@ -98,9 +98,12 @@ defmodule Ecto.Migration.Auto.Field do
     try do
       data.type()
     rescue
-      UndefinedFunctionError -> data
+      UndefinedFunctionError -> better_db_type(data)
     end
   end
+
+  defp better_db_type(:integer), do: :BIGINT
+  defp better_db_type(type),     do: type
 
   defp get_attribute_opts(module, name) do
     case :erlang.function_exported(module, :__attribute_option__, 1) do
