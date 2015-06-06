@@ -46,7 +46,7 @@ defmodule EctoMigrateTest do
     Ecto.Migration.Auto.migrate(EctoIt.Repo, TestModel)
     query = from t in Ecto.Migration.SystemTable, select: t
     [result] = EctoIt.Repo.all(query)
-    assert result.metainfo == "id:integer,f:string,i:integer,l:boolean"
+    assert result.metainfo == "id:BIGINT,f:string,i:BIGINT,l:boolean"
     assert result.tablename == "ecto_migrate_test_table"
 
     Ecto.Migration.Auto.migrate(EctoIt.Repo, MyModel)
