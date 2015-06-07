@@ -1,3 +1,7 @@
+## v0.3.1
+
+* bump for using ecto 0.12.0-rc
+
 ## v0.3.0
 
 * Backwards incompatible changes
