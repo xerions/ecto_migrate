@@ -1,3 +1,9 @@
+## v0.3.2
+
+* Enhancements
+  * add more space for meta information
+  * update meta information after migration run
+
 ## v0.3.1
 
 * bump for using ecto 0.12.0-rc
@@ -20,7 +26,7 @@
 ## v0.1.1
 
 * Enhancements
-  * Do not use `@derive [Access]` for structs   
+  * Do not use `@derive [Access]` for structs
 
 * Bug fixes
   * Allow setting of options for `belongs_to`-defined fields too

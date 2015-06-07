@@ -29,7 +29,16 @@ defmodule Ecto.Migration.SystemTable.Migration do
   def up do
     create table(:ecto_auto_migration) do
       add :tablename, :string
-      add :metainfo, :string
+      add :metainfo, :string, size: 2040
+    end
+  end
+end
+
+defmodule Ecto.Migration.SystemTable.Migration3_2 do
+  use Ecto.Migration
+  def up do
+    alter table(:ecto_auto_migration) do
+      modify :metainfo, :string, size: 2040
     end
   end
 end
