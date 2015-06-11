@@ -1,3 +1,8 @@
+## v0.3.3
+
+* Enhancements
+  * allow defining more sources for the same model
+
 ## v0.3.2
 
 * Enhancements

@@ -172,3 +172,24 @@ defmodule Weather do # is for later at now
   def __attribute_option__(_),     do: []
 end
 ```
+
+Possibility to have more sources
+--------------------------------
+
+If the same model used by different sources, it is possible to define callback for it
+
+```elixir
+defmodule Weather do # is for later at now
+  use Ecto.Model
+  use Ecto.Migration.Auto.Index
+
+  schema "weather" do
+    field :city
+    field :temp_lo, :integer
+    field :temp_hi, :integer
+    field :prcp,    :float, default: 0.0
+  end
+
+  def __sources__, do: ["weather", "history_weather"]
+end
+```

@@ -106,7 +106,7 @@ defmodule Ecto.Migration.Auto.Field do
   defp better_db_type(type),     do: type
 
   defp get_attribute_opts(module, name) do
-    case :erlang.function_exported(module, :__attribute_option__, 1) do
+    case function_exported?(module, :__attribute_option__, 1) do
       true -> module.__attribute_option__(name)
       _    -> []
     end

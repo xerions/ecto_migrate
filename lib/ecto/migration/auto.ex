@@ -57,25 +57,34 @@ defmodule Ecto.Migration.Auto do
   """
   def migrate(repo, module, opts \\ []) do
     ensure_exists(repo)
+    for tablename <- sources(module) do
+      {assoc_field, tablename} = get_tablename(module, tablename, opts)
+      tableatom = tablename |> String.to_atom
+      for_opts = {assoc_field, opts[:for]}
 
-    {assoc_field, tablename} = get_tablename(module, opts)
-    tableatom = tablename |> String.to_atom
-    for_opts = {assoc_field, opts[:for]}
+      {fields_changes, assocs} = repo.get(SystemTable, tablename) |> Field.check(tableatom, module, for_opts)
+      index_changes  = (from s in SystemTable.Index, where: ^tablename == s.tablename) |> repo.all |> Index.check(tableatom, module)
 
-    {fields_changes, assocs} = repo.get(SystemTable, tablename) |> Field.check(tableatom, module, for_opts)
-    index_changes  = (from s in SystemTable.Index, where: ^tablename == s.tablename) |> repo.all |> Index.check(tableatom, module)
-
-    if migration_module = check_gen(tableatom, module, fields_changes, index_changes, opts) do
-       Ecto.Migrator.up(repo, random, migration_module)
-       Field.update_meta(repo, module, tablename, assocs) # May be in transaction?
-       Index.update_meta(repo, module, tablename, index_changes)
+      if migration_module = check_gen(tableatom, module, fields_changes, index_changes, opts) do
+         Ecto.Migrator.up(repo, random, migration_module)
+         Field.update_meta(repo, module, tablename, assocs) # May be in transaction?
+         Index.update_meta(repo, module, tablename, index_changes)
+      end
     end
   end
 
-  defp get_tablename(module, []) do
-    {nil, module.__schema__(:source)}
+  def sources(module) do
+    tablename = module.__schema__(:source)
+    case function_exported?(module, :__sources__, 0) do
+      true  -> module.__sources__()
+      false -> [tablename]
+    end
   end
-  defp get_tablename(module, [for: mod]) do
+
+  defp get_tablename(module, tablename, []) do
+    {nil, tablename}
+  end
+  defp get_tablename(module, _, [for: mod]) do
     %Ecto.Association.Has{assoc_key: assoc_key, queryable: {tablename, _}} = find_assoc_field(module, mod)
     {assoc_key, tablename}
   end
