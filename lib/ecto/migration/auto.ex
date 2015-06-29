@@ -81,7 +81,7 @@ defmodule Ecto.Migration.Auto do
     end
   end
 
-  defp get_tablename(module, tablename, []) do
+  defp get_tablename(_module, tablename, []) do
     {nil, tablename}
   end
   defp get_tablename(module, _, [for: mod]) do
@@ -154,7 +154,6 @@ defmodule Ecto.Migration.Auto do
     for {model, migration} <- @migration_tables do
       ensure_exists(repo, model, migration)
     end
-    ensure_version_3_2(repo)
   end
 
   defp ensure_exists(repo, model, migration) do
@@ -164,19 +163,6 @@ defmodule Ecto.Migration.Auto do
       _, _ ->
         Ecto.Migrator.up(repo, random, migration)
     end
-  end
-
-  defp ensure_version_3_2(repo) do
-    {table, meta} = {String.duplicate("0", 200), String.duplicate("0", 510)}
-    repo.transaction(fn ->
-      repo.insert(%SystemTable{tablename: table, metainfo: meta})
-      found = repo.get_by(SystemTable, tablename: table)
-      case found do
-        %SystemTable{metainfo: ^meta} -> nil
-        _                             -> Ecto.Migrator.up(repo, random, Ecto.Migration.SystemTable.Migration3_2)
-      end
-      repo.delete(found)
-    end)
   end
 
   defp random, do: :crypto.rand_uniform(0, 1099511627775)

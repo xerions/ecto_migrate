@@ -56,14 +56,14 @@ defmodule EctoMigrateTest do
     Ecto.Migration.Auto.migrate(Repo, MyModel)
     Ecto.Migration.Auto.migrate(Repo, Ecto.Taggable, [for: MyModel])
 
-    Repo.insert(%MyModel{a: "foo"})
-    Repo.insert(%MyModel{a: "bar"})
-    %MyModel{a: "foo"} |> Ecto.Model.put_source("my_model_2") |> Repo.insert
+    Repo.insert!(%MyModel{a: "foo"})
+    Repo.insert!(%MyModel{a: "bar"})
+    %MyModel{a: "foo"} |> Ecto.Model.put_source("my_model_2") |> Repo.insert!
 
     model = %MyModel{}
     new_tag = Ecto.Model.build(model, :my_model_tags)
     new_tag = %{new_tag | tag_id: 2, name: "test_tag", model: MyModel |> to_string}
-    EctoIt.Repo.insert(new_tag)
+    EctoIt.Repo.insert!(new_tag)
 
     query = from c in MyModel, where: c.id == 2, preload: [:my_model_tags]
     [result] = EctoIt.Repo.all(query)

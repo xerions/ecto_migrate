@@ -8,9 +8,9 @@ defmodule Ecto.Migration.Auto.Field do
     metainfo = module.__schema__(:fields) |> Stream.map(&field_to_meta(&1, module, assocs)) |> Enum.join(",")
     updated_info = %SystemTable{tablename: tablename, metainfo: metainfo}
     if repo.get(SystemTable, tablename) do
-      repo.update(updated_info)
+      repo.update!(updated_info)
     else
-      repo.insert(updated_info)
+      repo.insert!(updated_info)
     end
   end
 

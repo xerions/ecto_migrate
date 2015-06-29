@@ -34,15 +34,6 @@ defmodule Ecto.Migration.SystemTable.Migration do
   end
 end
 
-defmodule Ecto.Migration.SystemTable.Migration3_2 do
-  use Ecto.Migration
-  def up do
-    alter table(:ecto_auto_migration) do
-      modify :metainfo, :string, size: 2040
-    end
-  end
-end
-
 defmodule Ecto.Migration.SystemTable do
   use Ecto.Model
   @primary_key {:tablename, :string, []}

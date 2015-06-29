@@ -193,3 +193,9 @@ defmodule Weather do # is for later at now
   def __sources__, do: ["weather", "history_weather"]
 end
 ```
+
+Upgrades in 0.3.x versions
+--------------------------
+
+If you have installed version before 0.3.2, use 0.3.2 or 0.3.3 for upgrading the table, after that it is possible to
+upgrade higher versions.

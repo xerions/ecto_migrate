@@ -1,7 +1,10 @@
-## v0.3.3
+## v0.4.0
 
 * Enhancements
   * allow defining more sources for the same model
+
+* Backwards incompatible changes
+  * use insert! update! as supported in ecto > 0.12.0, it is no more compatible with ecto < 0.12.0
 
 ## v0.3.2
 

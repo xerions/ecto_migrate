@@ -31,7 +31,7 @@ defmodule Ecto.Migration.Auto.Index do
   def update_meta(repo, module, tablename, _) do
     (from s in Index, where: s.tablename == ^tablename) |> repo.delete_all
     for {columns, opts} <- all(module) do
-      repo.insert(Map.merge(%Index{tablename: tablename, index: Enum.join(columns, ",")}, :maps.from_list(opts)))
+      repo.insert!(Map.merge(%Index{tablename: tablename, index: Enum.join(columns, ",")}, :maps.from_list(opts)))
     end
   end
 
