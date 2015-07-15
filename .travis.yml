@@ -1,12 +1,11 @@
 language: elixir
 elixir:
-  - 1.0.0
-  - 1.0.1
-  - 1.0.2
-  - 1.0.3
+  - 1.0.5
 otp_release:
-  - 17.4
+  - 17.5
+  - 18.0
 services: mysql
+sudo: false
 script:
   - MIX_ENV=mysql mix test
   - MIX_ENV=pg mix test
