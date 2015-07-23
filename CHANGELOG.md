@@ -1,3 +1,8 @@
+## v0.5.0
+
+* Backwards incompatible changes
+  * as ecto => 0.14.0 generate __schema__(:type, field) instead of __schema__(:field, field)
+
 ## v0.4.1
 
 * Enhancements

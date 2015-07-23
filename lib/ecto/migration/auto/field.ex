@@ -17,7 +17,7 @@ defmodule Ecto.Migration.Auto.Field do
   defp field_to_meta(field, module, assocs) do
     case List.keyfind(assocs, field, 0) do
       nil ->
-        (field |> Atom.to_string) <> ":" <> (module.__schema__(:field, field) |> type |> Atom.to_string)
+        (field |> Atom.to_string) <> ":" <> (module.__schema__(:type, field) |> type |> Atom.to_string)
       {_, _, assoc_table} ->
         (field |> Atom.to_string) <> ":" <>  (assoc_table |> Atom.to_string)
     end
@@ -61,7 +61,7 @@ defmodule Ecto.Migration.Auto.Field do
       case List.keyfind(assocs, name, 0) do
         nil ->
           unless name == assoc_key do
-            type = type(module.__schema__(:field, name))
+            type = type(module.__schema__(:type, name))
             opts = get_attribute_opts(module, name)
             add(name, type, fields_in_db, quote do: [unquote(type), unquote(opts)])
           else
