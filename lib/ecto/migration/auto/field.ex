@@ -4,8 +4,8 @@ defmodule Ecto.Migration.Auto.Field do
   @doc """
   Update meta information in repository
   """
-  def update_meta(repo, module, tablename, assocs) do
-    metainfo = module.__schema__(:fields) |> Stream.map(&field_to_meta(&1, module, assocs)) |> Enum.join(",")
+  def update_meta(repo, module, tablename, relateds) do
+    metainfo = module.__schema__(:fields) |> Stream.map(&field_to_meta(&1, module, relateds)) |> Enum.join(",")
     updated_info = %SystemTable{tablename: tablename, metainfo: metainfo}
     if repo.get(SystemTable, tablename) do
       repo.update!(updated_info)
@@ -14,12 +14,12 @@ defmodule Ecto.Migration.Auto.Field do
     end
   end
 
-  defp field_to_meta(field, module, assocs) do
-    case List.keyfind(assocs, field, 0) do
+  defp field_to_meta(field, module, relateds) do
+    case List.keyfind(relateds, field, 0) do
       nil ->
         (field |> Atom.to_string) <> ":" <> (module.__schema__(:type, field) |> type |> Atom.to_string)
-      {_, _, assoc_table} ->
-        (field |> Atom.to_string) <> ":" <>  (assoc_table |> Atom.to_string)
+      {_, _, related_table} ->
+        (field |> Atom.to_string) <> ":" <>  (related_table |> Atom.to_string)
     end
   end
 
@@ -27,14 +27,14 @@ defmodule Ecto.Migration.Auto.Field do
   Check database fields with actual models fields and gives
   """
   def check(old_fields, _tablename, module, for_opts) do
-    assocs = associations(module)
+    relateds = associations(module)
     metainfo = old_keys(old_fields)
     new_fields = module.__schema__(:fields)
 
-    add_fields = add(module, new_fields, metainfo, assocs, for_opts)
+    add_fields = add(module, new_fields, metainfo, relateds, for_opts)
     remove_fields = remove(new_fields, metainfo)
 
-    {{old_fields == nil, remove_fields ++ add_fields}, assocs}
+    {{old_fields == nil, remove_fields ++ add_fields}, relateds}
   end
 
   defp old_keys(nil), do: []
@@ -48,28 +48,28 @@ defmodule Ecto.Migration.Auto.Field do
   defp associations(module) do
     module.__schema__(:associations) |> Enum.flat_map(fn(association) ->
       case module.__schema__(:association, association) do
-        %Ecto.Association.BelongsTo{owner_key: field, assoc: assoc_module} ->
-          [{field, assoc_module, assoc_module.__schema__(:source) |> String.to_atom}]
+        %Ecto.Association.BelongsTo{owner_key: field, related: related_module} ->
+          [{field, related_module, related_module.__schema__(:source) |> String.to_atom}]
         _ ->
           []
       end
     end)
   end
 
-  defp add(module, all_fields, fields_in_db, assocs, {assoc_key, assoc_mod}) when is_list(all_fields) do
+  defp add(module, all_fields, fields_in_db, relateds, {related_key, related_mod}) when is_list(all_fields) do
     for name <- all_fields, name != :id do
-      case List.keyfind(assocs, name, 0) do
+      case List.keyfind(relateds, name, 0) do
         nil ->
-          unless name == assoc_key do
+          unless name == related_key do
             type = type(module.__schema__(:type, name))
             opts = get_attribute_opts(module, name)
             add(name, type, fields_in_db, quote do: [unquote(type), unquote(opts)])
           else
-            association_table = assoc_mod.__schema__(:source) |> String.to_atom
+            association_table = related_mod.__schema__(:source) |> String.to_atom
             add(name, association_table, fields_in_db, quote do: [Ecto.Migration.references(unquote(association_table))])
           end
-        {assoc_field_name, _mod, association_table} ->
-          opts = get_attribute_opts(module, assoc_field_name)
+        {related_field_name, _mod, association_table} ->
+          opts = get_attribute_opts(module, related_field_name)
           add(name, association_table, fields_in_db, quote do: [Ecto.Migration.references(unquote(association_table)), unquote(opts)])
       end
     end |> List.flatten

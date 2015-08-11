@@ -58,16 +58,16 @@ defmodule Ecto.Migration.Auto do
   def migrate(repo, module, opts \\ []) do
     ensure_exists(repo)
     for tablename <- sources(module) do
-      {assoc_field, tablename} = get_tablename(module, tablename, opts)
+      {related_field, tablename} = get_tablename(module, tablename, opts)
       tableatom = tablename |> String.to_atom
-      for_opts = {assoc_field, opts[:for]}
+      for_opts = {related_field, opts[:for]}
 
-      {fields_changes, assocs} = repo.get(SystemTable, tablename) |> Field.check(tableatom, module, for_opts)
+      {fields_changes, relateds} = repo.get(SystemTable, tablename) |> Field.check(tableatom, module, for_opts)
       index_changes  = (from s in SystemTable.Index, where: ^tablename == s.tablename) |> repo.all |> Index.check(tableatom, module)
 
       if migration_module = check_gen(tableatom, module, fields_changes, index_changes, opts) do
          Ecto.Migrator.up(repo, random, migration_module)
-         Field.update_meta(repo, module, tablename, assocs) # May be in transaction?
+         Field.update_meta(repo, module, tablename, relateds) # May be in transaction?
          Index.update_meta(repo, module, tablename, index_changes)
       end
     end
@@ -85,18 +85,18 @@ defmodule Ecto.Migration.Auto do
     {nil, tablename}
   end
   defp get_tablename(module, _, [for: mod]) do
-    %Ecto.Association.Has{assoc_key: assoc_key, queryable: {tablename, _}} = find_assoc_field(module, mod)
-    {assoc_key, tablename}
+    %Ecto.Association.Has{related_key: related_key, queryable: {tablename, _}} = find_related_field(module, mod)
+    {related_key, tablename}
   end
 
-  defp find_assoc_field(module, mod) do
+  defp find_related_field(module, mod) do
     (mod.__schema__(:associations)
     |> Stream.map(&mod.__schema__(:association, &1))
-    |> Enum.find(&assoc_mod?(&1, module))) || raise(ArgumentError, message: "association in #{m2s(mod)} for #{m2s(module)} not found")
+    |> Enum.find(&related_mod?(&1, module))) || raise(ArgumentError, message: "association in #{m2s(mod)} for #{m2s(module)} not found")
   end
 
-  defp assoc_mod?(%Ecto.Association.Has{assoc: mod, queryable: {_, _}}, mod), do: true
-  defp assoc_mod?(_, _), do: false
+  defp related_mod?(%Ecto.Association.Has{related: mod, queryable: {_, _}}, mod), do: true
+  defp related_mod?(_, _), do: false
 
   defp check_gen(_tablename, _module, {false, []}, {[], []}, _opts), do: nil
   defp check_gen(tablename, module, {create?, changed_fields}, {create_indexes, delete_indexes}, opts) do

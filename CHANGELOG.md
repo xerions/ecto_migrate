@@ -1,3 +1,8 @@
+## v0.6.0
+
+* Backwards incompatible changes
+  * as ecto => 0.15.0 renames some fields in Ecto.Association.Has from `assoc` to `related`
+
 ## v0.5.0
 
 * Backwards incompatible changes

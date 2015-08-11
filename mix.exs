@@ -1,6 +1,6 @@
 defmodule EctoMigrate.Mixfile do
   use Mix.Project
-  @version "0.5.0"
+  @version "0.6.0"
   @github "https://github.com/xerions/ecto_migrate"
 
   def project do
@@ -50,7 +50,7 @@ defmodule EctoMigrate.Mixfile do
   defp deps do
     [{:postgrex, ">= 0.0.0", optional: true},
      {:mariaex, ">= 0.0.0", optional: true},
-     {:ecto, "~> 0.14.0"},
+     {:ecto, "~> 0.15.0"},
      {:ecto_it, "~> 0.2.0", optional: true}]
   end
 end

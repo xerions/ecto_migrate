@@ -1,6 +1,10 @@
 Ecto Migrate [![Build Status](https://travis-ci.org/xerions/ecto_migrate.svg)](https://travis-ci.org/xerions/ecto_migrate)
 ============
 
+Ecto migrate brings automatic migrations to ecto. Instead of defining and writting manuall diffing
+from actual model and old model. The `ecto_migrate` do it for you. It save actual represantation of
+a model model in database and checks, if actual model have the same format as saved in database.
+
 To test, use EctoIt (is depended on it for tests purposes):
 
 ```
