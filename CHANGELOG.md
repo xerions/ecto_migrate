@@ -1,3 +1,8 @@
+## v0.6.1
+
+* Enhancements
+  * use ecto ~> 0.16.0
+
 ## v0.6.0
 
 * Backwards incompatible changes
