@@ -1,5 +1,7 @@
 defmodule Ecto.Migration.Auto.Index do
   import Ecto.Query
+
+  alias Ecto.Migration.SystemTable
   alias Ecto.Migration.SystemTable.Index
 
   defmacro __using__(_opts) do
@@ -27,11 +29,18 @@ defmodule Ecto.Migration.Auto.Index do
   @doc """
   Update meta information in repository
   """
-  def update_meta(_repo, _module, _tablename, {[], []}), do: nil
-  def update_meta(repo, module, tablename, _) do
+  def update_meta(_repo, _module, _tablename, {[], []}, false), do: nil
+  def update_meta(repo, module, tablename, _, true) do
+    from(s in SystemTable.Index, where: s.tablename == ^tablename) |> repo.update_all(set: [tablename: module.__schema__(:source)])
+  end
+  def update_meta(repo, module, tablename, _, table_renamed?) do
     (from s in Index, where: s.tablename == ^tablename) |> repo.delete_all
     for {columns, opts} <- all(module) do
       repo.insert!(Map.merge(%Index{tablename: tablename, index: Enum.join(columns, ",")}, :maps.from_list(opts)))
+    end
+    case table_renamed? do
+      true -> from(s in SystemTable.Index, where: s.tablename == ^tablename) |> repo.update_all(set: [tablename: module.__schema__(:source)])
+      _ -> :ok
     end
   end
 
@@ -41,10 +50,8 @@ defmodule Ecto.Migration.Auto.Index do
   def check(old_indexes, tablename, module) do
     new_indexes = all(module) |> Enum.map(&merge_default/1)
     old_indexes = old_indexes |> Enum.map(&transform_from_db/1)
-
     create_indexes = (new_indexes -- old_indexes) |> create(tablename)
     delete_indexes = (old_indexes -- new_indexes) |> delete(tablename)
-
     {create_indexes, delete_indexes}
   end
 

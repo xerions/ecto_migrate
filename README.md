@@ -198,6 +198,48 @@ defmodule Weather do # is for later at now
 end
 ```
 
+Posibility to rename a table during development
+-------------------------------------------------
+
+`ecto_migrate` supports ability to rename a database table during development process. For this case add the
+`old_tablename/0` function that will just return old table name.
+
+For example your old model looks like this:
+
+```elixir
+defmodule Weather do # is for later at now
+  use Ecto.Model
+  use Ecto.Migration.Auto.Index
+
+  schema "weather" do
+    field :city
+    field :temp_lo, :integer
+    field :temp_hi, :integer
+    field :prcp,    :float, default: 0.0
+  end
+end
+```
+
+Now you can add `old_tablename/0` function and after recompilation `ecto_migrate` will update table name in the database:
+
+```elixir
+defmodule Weather do # is for later at now
+  use Ecto.Model
+  use Ecto.Migration.Auto.Index
+
+  schema "weather_updated" do
+    field :city
+    field :temp_lo, :integer
+    field :temp_hi, :integer
+    field :prcp,    :float, default: 0.0
+  end
+
+  def old_tablename do
+    "weather"
+  end
+end
+```
+
 Upgrades in 0.3.x versions
 --------------------------
 

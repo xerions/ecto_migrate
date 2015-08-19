@@ -1,5 +1,5 @@
 defmodule TestModel do
-  use Ecto.Schema
+  use Ecto.Model
   use Ecto.Migration.Auto.Index
 
   index(:l, using: "hash")
@@ -72,5 +72,16 @@ defmodule EctoMigrateTest do
     assert tags.id == 1
     assert tags.model == "Elixir.MyModel"
     assert tags.name  == "test_tag"
+
+    [query] = (from t in Ecto.Migration.SystemTable, where: t.tablename == "ecto_migrate_test_table") |> EctoIt.Repo.all
+    assert query.tablename == "ecto_migrate_test_table"
+
+    Code.require_file(File.cwd! <> "/test/test_model.exs")
+    Ecto.Migration.Auto.migrate(EctoIt.Repo, TestModel)
+
+    [query] = (from t in Ecto.Migration.SystemTable, where: t.tablename == "test_table_2") |> EctoIt.Repo.all
+    assert query.tablename == "test_table_2"
+    assert query.metainfo  == "id:id,f:string,l:boolean"
+    assert (from t in Ecto.Migration.SystemTable, where: t.tablename == "ecto_migrate_test_table") |> EctoIt.Repo.all == []
   end
 end

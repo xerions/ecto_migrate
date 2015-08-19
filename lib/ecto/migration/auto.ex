@@ -61,14 +61,13 @@ defmodule Ecto.Migration.Auto do
       {related_field, tablename} = get_tablename(module, tablename, opts)
       tableatom = tablename |> String.to_atom
       for_opts = {related_field, opts[:for]}
-
       {fields_changes, relateds} = repo.get(SystemTable, tablename) |> Field.check(tableatom, module, for_opts)
       index_changes  = (from s in SystemTable.Index, where: ^tablename == s.tablename) |> repo.all |> Index.check(tableatom, module)
-
       if migration_module = check_gen(tableatom, module, fields_changes, index_changes, opts) do
-         Ecto.Migrator.up(repo, random, migration_module)
-         Field.update_meta(repo, module, tablename, relateds) # May be in transaction?
-         Index.update_meta(repo, module, tablename, index_changes)
+        Ecto.Migrator.up(repo, random, migration_module)
+        {_, rename?, _} = fields_changes
+        Field.update_meta(repo, module, tablename, relateds, rename?) # May be in transaction?
+        Index.update_meta(repo, module, tablename, index_changes, rename?)
       end
     end
   end
@@ -77,7 +76,11 @@ defmodule Ecto.Migration.Auto do
     tablename = module.__schema__(:source)
     case function_exported?(module, :__sources__, 0) do
       true  -> module.__sources__()
-      false -> [tablename]
+      false ->
+        case function_exported?(module, :old_tablename, 0) do
+          true -> [module.old_tablename]
+          false -> [tablename]
+        end
     end
   end
 
@@ -98,8 +101,8 @@ defmodule Ecto.Migration.Auto do
   defp related_mod?(%Ecto.Association.Has{related: mod, queryable: {_, _}}, mod), do: true
   defp related_mod?(_, _), do: false
 
-  defp check_gen(_tablename, _module, {false, []}, {[], []}, _opts), do: nil
-  defp check_gen(tablename, module, {create?, changed_fields}, {create_indexes, delete_indexes}, opts) do
+  defp check_gen(_tablename, _module, {false, false, []}, {[], []}, _opts), do: nil
+  defp check_gen(tablename, module, {create?, _rename?, changed_fields}, {create_indexes, delete_indexes}, opts) do
     migration_module = migration_module(module, opts)
     up = gen_up(module, tablename, create?, changed_fields, create_indexes, delete_indexes)
     quote do
@@ -125,20 +128,27 @@ defmodule Ecto.Migration.Auto do
     end
   end
 
-  defp gen_up_table(module, tablename, true, changed_fields) do
-    key? = module.__schema__(:primary_key) == [:id]
-    quote do
-      create table(unquote(tablename), primary_key: unquote(key?)) do
-        unquote(changed_fields)
-      end
-    end
-  end
-
-  defp gen_up_table(_module, tablename, false, changed_fields) do
+  defp gen_up_table(module, tablename, changed_fields) do
+    rename = rename_table(module, module.__schema__(:source), tablename)
     quote do
       alter table(unquote(tablename)) do
         unquote(changed_fields)
       end
+      unquote(rename)
+    end
+  end
+
+  defp gen_up_table(module, tablename, create?, changed_fields) do
+    case create? do
+      false ->
+        gen_up_table(module, tablename, changed_fields)
+      true ->
+        key? = module.__schema__(:primary_key) == [:id]
+        quote do
+          create table(unquote(tablename), primary_key: unquote(key?)) do
+            unquote(changed_fields)
+          end
+        end
     end
   end
 
@@ -146,6 +156,17 @@ defmodule Ecto.Migration.Auto do
     quote do
       unquote(delete_indexes)
       unquote(create_indexes)
+    end
+  end
+
+  defp rename_table(module, new_tablename, old_tablename) do
+    case function_exported?(module, :old_tablename, 0) do
+      true ->
+        quote do
+          rename table(unquote(old_tablename)), to: table(unquote(new_tablename |> String.to_atom))
+        end
+      false ->
+        ""
     end
   end
 
