@@ -1,16 +1,21 @@
 defmodule Ecto.Migration.Auto.Field do
+  import Ecto.Query
   alias Ecto.Migration.SystemTable
 
   @doc """
   Update meta information in repository
   """
-  def update_meta(repo, module, tablename, relateds) do
+  def update_meta(repo, module, tablename, relateds, table_renamed?) do
     metainfo = module.__schema__(:fields) |> Stream.map(&field_to_meta(&1, module, relateds)) |> Enum.join(",")
     updated_info = %SystemTable{tablename: tablename, metainfo: metainfo}
     if repo.get(SystemTable, tablename) do
       repo.update!(updated_info)
     else
       repo.insert!(updated_info)
+    end
+    case table_renamed? do
+      true -> repo.update_all(from(s in SystemTable, where: s.tablename == ^tablename), set: [tablename: module.__schema__(:source)])
+      _ -> :ok
     end
   end
 
@@ -30,11 +35,9 @@ defmodule Ecto.Migration.Auto.Field do
     relateds = associations(module)
     metainfo = old_keys(old_fields)
     new_fields = module.__schema__(:fields)
-
     add_fields = add(module, new_fields, metainfo, relateds, for_opts)
     remove_fields = remove(new_fields, metainfo)
-
-    {{old_fields == nil, remove_fields ++ add_fields}, relateds}
+    {{old_fields == nil, function_exported?(module, :old_tablename, 0),  remove_fields ++ add_fields}, relateds}
   end
 
   defp old_keys(nil), do: []
