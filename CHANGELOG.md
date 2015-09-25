@@ -1,3 +1,8 @@
+## v0.6.2
+
+* Enhancements
+  * use ecto ~> 1.0.0
+
 ## v0.6.1
 
 * Enhancements

@@ -5,7 +5,7 @@ defmodule Ecto.Migration.SystemTable.Index.Migration do
       add :tablename, :string
       add :index, :string
       add :name, :string
-      add :concurrently
+      add :concurrently, :string
       add :unique, :boolean
       add :using, :string
     end
