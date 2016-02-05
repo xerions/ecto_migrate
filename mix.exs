@@ -25,7 +25,7 @@ defmodule EctoMigrate.Mixfile do
   end
 
   defp package do
-    [contributors: ["Dmitry Russ(Aleksandrov)"],
+    [maintainers: ["Dmitry Russ(Aleksandrov)"],
      licenses: ["Apache 2.0"],
      links: %{"GitHub" => @github}]
   end
