@@ -1,3 +1,8 @@
+## v0.6.3
+
+* Enhancements
+  * add migrated? to check is a table migrated or not
+
 ## v0.6.2
 
 * Enhancements
