@@ -72,5 +72,7 @@ defmodule EctoMigrateTest do
     assert tags.id == 1
     assert tags.model == "Elixir.MyModel"
     assert tags.name  == "test_tag"
+
+    assert true == Ecto.Migration.Auto.migrated?(Repo, TestModel)
   end
 end

@@ -81,6 +81,19 @@ defmodule Ecto.Migration.Auto do
     end
   end
 
+  def migrated?(repo, model) do
+    tablename = model.__schema__(:source)
+    try do
+      query = from t in Ecto.Migration.SystemTable, select: t, where: t.tablename == ^tablename
+      case repo.all(query) do
+        [] -> false
+        [%Ecto.Migration.SystemTable{tablename: tablename}] -> true
+      end
+    catch _, _ ->
+      false
+    end
+  end
+
   defp get_tablename(_module, tablename, []) do
     {nil, tablename}
   end
