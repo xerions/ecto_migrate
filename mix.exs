@@ -49,7 +49,7 @@ defmodule EctoMigrate.Mixfile do
   defp deps do
     [{:postgrex, ">= 0.0.0", optional: true},
      {:mariaex, ">= 0.0.0", optional: true},
-     {:ecto, "~> 1.0.0"},
+     {:ecto, "~> 1.0"},
      {:ecto_it, "~> 0.2.0", optional: true}]
   end
 end
