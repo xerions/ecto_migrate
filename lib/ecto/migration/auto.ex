@@ -87,7 +87,7 @@ defmodule Ecto.Migration.Auto do
       query = from t in Ecto.Migration.SystemTable, select: t, where: t.tablename == ^tablename
       case repo.all(query) do
         [] -> false
-        [%Ecto.Migration.SystemTable{tablename: tablename}] -> true
+        [%Ecto.Migration.SystemTable{tablename: _tablename}] -> true
       end
     catch _, _ ->
       false
