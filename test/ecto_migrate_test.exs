@@ -12,7 +12,7 @@ defmodule TestModel do
 end
 
 defmodule Ecto.Taggable do
-  use Ecto.Model
+  use Ecto.Schema
   use Ecto.Migration.Auto.Index
 
   index(:tag_id, using: "hash")
@@ -24,11 +24,11 @@ defmodule Ecto.Taggable do
 end
 
 defmodule MyModel do
-  use Ecto.Model
+  use Ecto.Schema
   schema "my_model" do
     field :a, :string
     field :b, :integer
-    field :c, Ecto.DateTime
+    field :c, :naive_datetime
     has_many :my_model_tags, {"my_model_tags", Ecto.Taggable}, [foreign_key: :tag_id]
   end
 
@@ -39,7 +39,7 @@ end
 defmodule EctoMigrateTest do
   use ExUnit.Case
   import Ecto.Query
-  alias EctoIt.Repo
+  alias Ecto.Repo
 
   setup do
     :ok = :application.start(:ecto_it)
@@ -47,7 +47,7 @@ defmodule EctoMigrateTest do
   end
 
   test "ecto_migrate with tags test" do
-    Ecto.Migration.Auto.migrate(EctoIt.Repo, TestModel)
+    Ecto.Migration.Auto.migrate(Ecto.Repo, TestModel)
     query = from t in Ecto.Migration.SystemTable, select: t
     [result] = Repo.all(query)
     assert result.metainfo == "id:id,f:string,i:BIGINT,l:boolean"
@@ -58,15 +58,15 @@ defmodule EctoMigrateTest do
 
     Repo.insert!(%MyModel{a: "foo"})
     Repo.insert!(%MyModel{a: "bar"})
-    %MyModel{a: "foo"} |> Ecto.Model.put_source("my_model_2") |> Repo.insert!
+    %MyModel{a: "foo"} |> Ecto.Schema.put_source("my_model_2") |> Repo.insert!
 
     model = %MyModel{}
-    new_tag = Ecto.Model.build(model, :my_model_tags)
+    new_tag = Ecto.Schema.build(model, :my_model_tags)
     new_tag = %{new_tag | tag_id: 2, name: "test_tag", model: MyModel |> to_string}
-    EctoIt.Repo.insert!(new_tag)
+    Repo.insert!(new_tag)
 
     query = from c in MyModel, where: c.id == 2, preload: [:my_model_tags]
-    [result] = EctoIt.Repo.all(query)
+    [result] = Repo.all(query)
     [tags] = result.my_model_tags
 
     assert tags.id == 1

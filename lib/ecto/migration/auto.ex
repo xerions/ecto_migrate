@@ -66,7 +66,7 @@ defmodule Ecto.Migration.Auto do
       index_changes  = (from s in SystemTable.Index, where: ^tablename == s.tablename) |> repo.all |> Index.check(tableatom, module)
 
       if migration_module = check_gen(tableatom, module, fields_changes, index_changes, opts) do
-         Ecto.Migrator.up(repo, random, migration_module)
+         Ecto.Migrator.up(repo, random(), migration_module)
          Field.update_meta(repo, module, tablename, relateds) # May be in transaction?
          Index.update_meta(repo, module, tablename, index_changes)
       end
@@ -174,11 +174,11 @@ defmodule Ecto.Migration.Auto do
       repo.get(model, "test")
     catch
       _, _ ->
-        Ecto.Migrator.up(repo, random, migration)
+        Ecto.Migrator.up(repo, random(), migration)
     end
   end
 
-  defp random, do: :crypto.rand_uniform(0, 1099511627775)
+  defp random, do: :rand.uniform(1099511627775)
 
   defp migration_module(module, []),         do: Module.concat(module, Migration)
   defp migration_module(module, [for: mod]), do: Module.concat([module, mod, Migration])

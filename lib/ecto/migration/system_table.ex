@@ -13,7 +13,7 @@ defmodule Ecto.Migration.SystemTable.Index.Migration do
 end
 
 defmodule Ecto.Migration.SystemTable.Index do
-  use Ecto.Model
+  use Ecto.Schema
   @primary_key {:tablename, :string, []}
   schema "ecto_auto_migration_index" do
     field :index, :string
@@ -35,7 +35,7 @@ defmodule Ecto.Migration.SystemTable.Migration do
 end
 
 defmodule Ecto.Migration.SystemTable do
-  use Ecto.Model
+  use Ecto.Schema
   @primary_key {:tablename, :string, []}
   schema "ecto_auto_migration" do
     field :metainfo, :string
