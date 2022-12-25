@@ -4,17 +4,19 @@ defmodule EctoMigrate.Mixfile do
   @github "https://github.com/xerions/ecto_migrate"
 
   def project do
-    [app: :ecto_migrate,
-     version: @version,
+    [
+      app: :ecto_migrate,
+      version: @version,
 
-     description: description(),
-     package: package(),
+      description: description(),
+      package: package(),
 
-     # Docs
-     name: "Ecto Auto Migrate",
-     docs: [source_ref: "v#{@version}",
-            source_url: @github],
-     deps: deps()]
+      # Docs
+      name: "Ecto Auto Migrate",
+      docs: [source_ref: "v#{@version}",
+             source_url: @github],
+      deps: deps()
+    ]
   end
 
   defp description do
@@ -34,7 +36,7 @@ defmodule EctoMigrate.Mixfile do
   #
   # Type `mix help compile.app` for more information
   def application do
-    [applications: [:logger, :ecto_sql]]
+    [extra_applications: [:logger, :ecto_sql]]
   end
 
   # Dependencies can be Hex packages:
