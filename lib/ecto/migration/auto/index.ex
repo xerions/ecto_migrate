@@ -49,7 +49,7 @@ defmodule Ecto.Migration.Auto.Index do
   end
 
   defp merge_default({index, opts}) do
-    {index, Keyword.merge(default_index_opts, opts) |> List.keysort(0)}
+    {index, Keyword.merge(default_index_opts(), opts) |> List.keysort(0)}
   end
 
   defp transform_from_db(index) do

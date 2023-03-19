@@ -37,6 +37,17 @@ Repo.all(from w in Weather, where: w.city == "Berlin")
 
 ```
 
+In order to auto-migrate a schema `MyProject.Schemas.MySchema` in your `MyProject` project, create a file:
+```bash
+$ cat > priv/repo/seeds.exs 
+
+Ecto.Migration.Auto.migrate(MyProject.Repo, MyProject.Schemas.MySchema)
+^D
+
+$ mix run priv/repo/seeds.exs
+```
+This should create a database table based on `MySchema`.
+
 Lets redefine the same model in a shell and migrate it
 
 ```elixir
