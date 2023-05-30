@@ -1,11 +1,11 @@
 Ecto Migrate [![Build Status](https://travis-ci.org/xerions/ecto_migrate.svg)](https://travis-ci.org/xerions/ecto_migrate)
 ============
 
-Ecto migrate brings automatic migrations to ecto. Instead of defining and writting manuall diffing
-from actual model and old model. The `ecto_migrate` do it for you. It save actual represantation of
-a model model in database and checks, if actual model have the same format as saved in database.
+Ecto migrate brings automatic migrations to ecto, instead of defining and writing manual diffing
+from current model and old model. It saves the representation of
+a model in the database and checks if current model has changed compared to the previously saved definition.
 
-To test, use EctoIt (is depended on it for tests purposes):
+To test, use EctoIt:
 
 ```
 iex -S mix
@@ -37,7 +37,7 @@ Repo.all(from w in Weather, where: w.city == "Berlin")
 
 ```
 
-Lets redefine the same model in a shell and migrate it
+Let's redefine the same model in a shell and migrate it
 
 ```elixir
 
@@ -58,7 +58,7 @@ Repo.all(from w in Weather, where: w.city == "Berlin")
 
 ```
 
-Lets use references
+Let's use references
 
 ```elixir
 
@@ -87,7 +87,7 @@ Ecto.Migration.Auto.migrate(Repo, Comment)
 
 ```
 
-`ecto_migrate` also provides additional `migrate/3` API. For using with custom source defined models. Example:
+`ecto_migrate` also provides additional `migrate/3` API, or use with custom source defined models. Example:
 
 ```elixir
 defmodule Taggable do
